@@ -2,7 +2,9 @@
 
 import streamlit as st
 import pickle
+import pandas
 from datetime import datetime
+from sklearn.ensemble import RandomForestClassifier
 startTime = datetime.now()
 # import znanych nam bibliotek
 
