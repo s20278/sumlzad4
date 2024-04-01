@@ -1,40 +1,55 @@
-import altair as alt
-import numpy as np
-import pandas as pd
+# źródło danych [https://www.kaggle.com/c/titanic/](https://www.kaggle.com/c/titanic)
+
 import streamlit as st
+import pickle
+from datetime import datetime
+startTime = datetime.now()
+# import znanych nam bibliotek
 
-"""
-# Welcome to Streamlit!
+import pathlib
+from pathlib import Path
 
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:.
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
+temp = pathlib.PosixPath
+pathlib.PosixPath = pathlib.WindowsPath
 
-In the meantime, below is an example of what you can do with just a few lines of code:
-"""
+filename = "model.sv"
+model = pickle.load(open(filename,'rb'))
+# otwieramy wcześniej wytrenowany model
 
-num_points = st.slider("Number of points in spiral", 1, 10000, 1100)
-num_turns = st.slider("Number of turns in spiral", 1, 300, 31)
+pclass_d = {0:"Pierwsza",1:"Druga", 2:"Trzecia"}
+embarked_d = {0:"Cherbourg", 1:"Queenstown", 2:"Southampton"}
+# o ile wcześniej kodowaliśmy nasze zmienne, to teraz wprowadzamy etykiety z ich nazewnictwem
 
-indices = np.linspace(0, 1, num_points)
-theta = 2 * np.pi * num_turns * indices
-radius = indices
+def main():
 
-x = radius * np.cos(theta)
-y = radius * np.sin(theta)
+	st.set_page_config(page_title="???")
+	overview = st.container()
+	left, right = st.columns(2)
+	prediction = st.container()
 
-df = pd.DataFrame({
-    "x": x,
-    "y": y,
-    "idx": indices,
-    "rand": np.random.randn(num_points),
-})
+	st.image("https://i.kym-cdn.com/entries/icons/mobile/000/026/489/crying.jpg")
 
-st.altair_chart(alt.Chart(df, height=700, width=700)
-    .mark_point(filled=True)
-    .encode(
-        x=alt.X("x", axis=None),
-        y=alt.Y("y", axis=None),
-        color=alt.Color("idx", legend=None, scale=alt.Scale()),
-        size=alt.Size("rand", legend=None, scale=alt.Scale(range=[1, 150])),
-    ))
+	with overview:
+		st.title("???")
+
+	with left:
+		sex_radio = st.radio( "Płeć", list(sex_d.keys()), format_func=lambda x : sex_d[x] )
+		embarked_radio = st.radio( "Port zaokrętowania", list(embarked_d.keys()), index=2, format_func= lambda x: embarked_d[x] )
+
+	with right:
+		age_slider = st.slider("Wiek", value=1, min_value=1, max_value=100)
+		sibsp_slider = st.slider("Liczba rodzeństwa i/lub partnera", min_value=0, max_value=10)
+		parch_slider = st.slider("Liczba rodziców i/lub dzieci", min_value=0, max_value=10)
+		fare_slider = st.slider("Cena biletu", min_value=0, max_value=500, step=1)
+
+	data = [[pclass_radio, sex_radio,  age_slider, sibsp_slider, parch_slider, fare_slider, embarked_radio]]
+	survival = model.predict(data)
+	s_confidence = model.predict_proba(data)
+
+	with prediction:
+		st.subheader("Czy taka osoba przeżyłaby katastrofę?")
+		st.subheader(("Tak" if survival[0] == 1 else "Nie"))
+		st.write("Pewność predykcji {0:.2f} %".format(s_confidence[0][survival][0] * 100))
+
+if __name__ == "__main__":
+    main()
